@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -19,7 +20,11 @@ public class Character : MonoBehaviour
     {
         // 좌클릭시 RemainJump를 하나 소모하여 CharacterJumpPower의 힘으로 점프한다.
         // ---------- TODO ---------- 
-        
+        if (Input.GetMouseButtonDown(0) && RemainJump>0)
+        {
+            RemainJump -= 1;
+            Jump(CharacterJumpPower);
+        }
         // -------------------- 
     }
 
@@ -31,10 +36,18 @@ public class Character : MonoBehaviour
 
     void OnCollisionEnter2D(Collision2D col)
     {
+        
         // tag가 Platform인 것과 충돌하면 RemainJump를 초기화한다.
         // tag가 Obstacle인 것과 충돌하면 게임 오버한다.
         // ---------- TODO ---------- 
-        
+        if(col.gameObject.tag == "Platform")
+        {
+            RemainJump = MaxJump;
+        }
+        if(col.gameObject.tag == "Obstacle")
+        {
+            GM.GameOver();
+        }
         // -------------------- 
     }
 
@@ -42,7 +55,11 @@ public class Character : MonoBehaviour
     {
         // tag가 Point인 것과 충돌하면 Point를 하나 얻고, 충돌한 오브젝트를 삭제한다.
         // ---------- TODO ---------- 
-        
+        if(col.gameObject.tag == "Point")
+        {
+            GM.NowScore += 1;
+            Destroy(col.gameObject);
+        }
         // -------------------- 
     }
 }
