@@ -24,6 +24,7 @@ public class GameManager : MonoBehaviour
     void Update()
     {
         MoveCharacter();
+        GetPoint(NowScore);
     }
 
     // For smooth cam moving, it's good to use LateUpdate.
