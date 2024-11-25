@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -26,7 +27,9 @@ public class GameManager : MonoBehaviour
     {
         // PlayerBall, CamObj, MyUIManager를 얻어온다.
         // ---------- TODO ---------- 
-        
+        PlayerBall = GameObject.Find("PlayerBall").gameObject;
+        CamObj = GameObject.Find("Main Camera").gameObject;
+        MyUIManager = GameObject.Find("Canvas").GetComponent<UIManager>();
         // -------------------- 
     }
 
@@ -40,7 +43,17 @@ public class GameManager : MonoBehaviour
     {
         // 좌클릭시 raycast하여 클릭 위치로 ShootBallTo 한다.
         // ---------- TODO ---------- 
-        
+        if (Input.GetMouseButtonDown(1))
+        {
+            Debug.Log("Right Clicked");
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            RaycastHit hit;
+
+            if (Physics.Raycast(ray, out hit))
+            {
+                ShootBallTo(hit.point);
+            }
+        }
         // -------------------- 
     }
 
@@ -57,14 +70,43 @@ public class GameManager : MonoBehaviour
         // 각 공의 이름은 {index}이며, 아래 함수로 index에 맞는 Material을 적용시킨다.
         // Obj.GetComponent<MeshRenderer>().material = Resources.Load<Material>("Materials/ball_1");
         // ---------- TODO ---------- 
-        
+        Vector3 currentPos = StartPosition;
+        Quaternion currentRot = StartRotation;
+        int index = 1;
+        float BallDiameter = BallRadius * 2;
+
+        for (int row = 0; row < 5; row++)
+        {
+            currentPos.x = StartPosition.x - ((BallDiameter + RowSpacing) * (5 - row - 1) / 2);
+
+            for (int col = 5; col > row; col--) 
+            {
+                GameObject ball = Instantiate(BallPrefab, currentPos, currentRot);
+                ball.name = "ball_" + index.ToString();
+                ball.GetComponent<MeshRenderer>().material = Resources.Load<Material>($"Materials/ball_{index}");
+                currentPos.x += BallDiameter + RowSpacing; 
+                index++;
+            }
+
+            currentPos.z += BallDiameter + RowSpacing;  
+        }
         // -------------------- 
     }
     void CamMove()
     {
         // CamObj는 PlayerBall을 CamSpeed의 속도로 따라간다.
         // ---------- TODO ---------- 
-        
+        Vector3 currentPos = CamObj.transform.position;
+        Vector3 targetPos = PlayerBall.transform.position;
+        targetPos.y = currentPos.y;
+        Vector3 newPos = Vector3.Lerp(currentPos, targetPos, CamSpeed * Time.deltaTime);
+        CamObj.transform.position = newPos;
+
+        if (PlayerBall.transform.position.y < -0.3f)
+        {
+            MyUIManager.DisplayText("Reloading...", 1);
+            StartCoroutine(RestartAfterDelay(2f));
+        }
         // -------------------- 
     }
 
@@ -79,7 +121,14 @@ public class GameManager : MonoBehaviour
         // 힘은 CalcPower 함수로 계산하고, y축 방향 힘은 0으로 한다.
         // ForceMode.Impulse를 사용한다.
         // ---------- TODO ---------- 
+        Rigidbody playerRB = PlayerBall.GetComponent<Rigidbody>();
+
+        Vector3 direction = (targetPos - playerRB.position).normalized;
         
+        float power = CalcPower(targetPos);
+        Vector3 force = new Vector3(direction.x * power, 0 , direction.z * power);
+
+        playerRB.AddForce(force, ForceMode.Impulse);
         // -------------------- 
     }
     
@@ -88,7 +137,19 @@ public class GameManager : MonoBehaviour
     {
         // "{ballName} falls"을 1초간 띄운다.
         // ---------- TODO ---------- 
-        
+        MyUIManager.DisplayText(ballName + " falls", 1);
+
+        if (ballName == "PlayerBall")
+        {
+            MyUIManager.DisplayText("Reloading...", 1);
+            StartCoroutine(RestartAfterDelay(2f));
+        }
         // -------------------- 
+    }
+
+    private IEnumerator RestartAfterDelay(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }
